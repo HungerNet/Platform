@@ -6,14 +6,14 @@
   },
   "name": "HungerNet Backend",
   "author": "support@hungernet.dev",
-  "description": "HungerNet FastAPI backend powered by uv.",
+  "description": "FastAPI backend for the HungerNet Platform.",
   "features": null,
   "docker_images": {
     "Python 3.13": "ghcr.io/ptero-eggs/yolks:python_3.13",
     "Python 3.12": "ghcr.io/ptero-eggs/yolks:python_3.12"
   },
   "file_denylist": [],
-  "startup": "cd /home/container/backend && export PATH=\"/home/container/.local/bin:$PATH\" && uv run uvicorn app.main:app --host 0.0.0.0 --port {{SERVER_PORT}}",
+  "startup": "cd /home/container/backend && export PATH=\"/home/container/.local/bin:$PATH\" && uv run uvicorn app.main:app --host 0.0.0.0 --port {{SERVER_PORT}} --proxy-headers --forwarded-allow-ips '*'",
   "config": {
     "files": "{}",
     "startup": "{\r\n    \"done\": \"Application startup complete\"\r\n}",
@@ -24,25 +24,15 @@
     "installation": {
       "container": "python:3.12-bookworm",
       "entrypoint": "bash",
-      "script": "#!/bin/bash\napt update\napt install -y git curl\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ -d .git ]; then\n    git pull\nelse\n    git clone https://github.com/HungerNet/Platform.git .\nfi\n\ncd backend\n\nexport HOME=/mnt/server\n\ncurl -LsSf https://astral.sh/uv/install.sh | sh\nexport PATH=\"$HOME/.local/bin:$PATH\"\n\nuv sync\n\nuv run alembic upgrade head\n\nuv run python -m app.cli setup-superuser\n\necho \"Install complete\"\nexit 0"
+      "script": "#!/bin/bash\napt update\napt install -y git curl\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ -d .git ]; then\n  git pull\nelse\n  git clone https://github.com/HungerNet/Platform.git .\nfi\n\ncd backend\n\nexport HOME=/mnt/server\n\ncurl -LsSf https://astral.sh/uv/install.sh | sh\nexport PATH=\"$HOME/.local/bin:$PATH\"\n\nuv sync\nuv run alembic upgrade head\n\necho \"Install complete\"\nexit 0"
     }
   },
   "variables": [
     {
       "name": "Database URL",
-      "description": "PostgreSQL connection string",
+      "description": "PostgreSQL connection string.",
       "env_variable": "DATABASE_URL",
-      "default_value": "",
-      "user_viewable": true,
-      "user_editable": true,
-      "rules": "required|string",
-      "field_type": "text"
-    },
-    {
-      "name": "Redis URL",
-      "description": "Redis connection string",
-      "env_variable": "REDIS_URL",
-      "default_value": "redis://localhost:6379/0",
+      "default_value": "postgresql+asyncpg://hungernet:local-development-only@localhost:5432/hungernet",
       "user_viewable": true,
       "user_editable": true,
       "rules": "required|string",
@@ -50,17 +40,17 @@
     },
     {
       "name": "JWT Secret",
-      "description": "JWT signing secret",
+      "description": "JWT secret. Use a securely generated value of at least 32 characters.",
       "env_variable": "JWT_SECRET",
       "default_value": "",
       "user_viewable": false,
       "user_editable": true,
-      "rules": "required|string",
+      "rules": "required|string|min:32",
       "field_type": "text"
     },
     {
       "name": "JWT Algorithm",
-      "description": "JWT algorithm",
+      "description": "JWT signing algorithm.",
       "env_variable": "JWT_ALGORITHM",
       "default_value": "HS256",
       "user_viewable": true,
@@ -70,7 +60,7 @@
     },
     {
       "name": "Access Token Expiry Minutes",
-      "description": "JWT access token expiry",
+      "description": "JWT access token lifetime in minutes.",
       "env_variable": "ACCESS_TOKEN_EXPIRY_MINUTES",
       "default_value": "15",
       "user_viewable": true,
@@ -80,7 +70,7 @@
     },
     {
       "name": "Session Expiry Days",
-      "description": "Session expiry time",
+      "description": "User session lifetime in days.",
       "env_variable": "SESSION_EXPIRY_DAYS",
       "default_value": "90",
       "user_viewable": true,
@@ -89,8 +79,28 @@
       "field_type": "text"
     },
     {
+      "name": "Redis URL",
+      "description": "Redis connection string.",
+      "env_variable": "REDIS_URL",
+      "default_value": "redis://localhost:6379/0",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Vite API Proxy Target",
+      "description": "Frontend development proxy target.",
+      "env_variable": "VITE_API_PROXY_TARGET",
+      "default_value": "http://localhost:8000",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string",
+      "field_type": "text"
+    },
+    {
       "name": "Avatar Storage Directory",
-      "description": "Directory used for avatar storage",
+      "description": "Directory used to store avatar uploads.",
       "env_variable": "AVATAR_STORAGE_DIR",
       "default_value": "media",
       "user_viewable": true,
@@ -100,9 +110,9 @@
     },
     {
       "name": "Avatar Public Base URL",
-      "description": "Public URL used when generating avatar URLs",
+      "description": "Base URL used when generating avatar links.",
       "env_variable": "AVATAR_PUBLIC_BASE_URL",
-      "default_value": "",
+      "default_value": "https://api.hungernet.dev",
       "user_viewable": true,
       "user_editable": true,
       "rules": "nullable|string",
@@ -110,7 +120,7 @@
     },
     {
       "name": "Superuser ID",
-      "description": "Initial superuser ID",
+      "description": "Superuser account identifier.",
       "env_variable": "SUPERUSER_ID",
       "default_value": "hungernet",
       "user_viewable": true,
@@ -120,7 +130,7 @@
     },
     {
       "name": "Superuser Username",
-      "description": "Initial superuser username",
+      "description": "Superuser username.",
       "env_variable": "SUPERUSER_USERNAME",
       "default_value": "HungerNet",
       "user_viewable": true,
@@ -130,12 +140,42 @@
     },
     {
       "name": "Superuser Password",
-      "description": "Initial superuser password",
+      "description": "Password used when running the setup-superuser CLI.",
       "env_variable": "SUPERUSER_PASSWORD",
       "default_value": "",
       "user_viewable": false,
       "user_editable": true,
-      "rules": "required|string",
+      "rules": "nullable|string",
+      "field_type": "text"
+    },
+    {
+      "name": "PostgreSQL Database",
+      "description": "Default PostgreSQL database name.",
+      "env_variable": "POSTGRES_DB",
+      "default_value": "hungernet",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string",
+      "field_type": "text"
+    },
+    {
+      "name": "PostgreSQL User",
+      "description": "Default PostgreSQL username.",
+      "env_variable": "POSTGRES_USER",
+      "default_value": "hungernet",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string",
+      "field_type": "text"
+    },
+    {
+      "name": "PostgreSQL Password",
+      "description": "Default PostgreSQL password.",
+      "env_variable": "POSTGRES_PASSWORD",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": "nullable|string",
       "field_type": "text"
     }
   ]
