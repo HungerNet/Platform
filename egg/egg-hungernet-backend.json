@@ -1,0 +1,62 @@
+{
+  "_comment": "HungerNet Backend",
+  "meta": {
+    "version": "PTDL_v2",
+    "update_url": null
+  },
+  "name": "HungerNet Backend",
+  "author": "support@hungernet.dev",
+  "description": "HungerNet FastAPI backend using uv, PostgreSQL, and Redis.",
+  "features": null,
+  "docker_images": {
+    "Python 3.12": "ghcr.io/ptero-eggs/yolks:python_3.12",
+    "Python 3.13": "ghcr.io/ptero-eggs/yolks:python_3.13"
+  },
+  "file_denylist": [],
+  "startup": "cd /home/container/backend && export PATH=\"/home/container/.local/bin:$PATH\" && uv run uvicorn app.main:app --host 0.0.0.0 --port {{SERVER_PORT}}",
+  "config": {
+    "files": "{}",
+    "startup": "{\r\n    \"done\": \"Application startup complete\"\r\n}",
+    "logs": "{}",
+    "stop": "^C"
+  },
+  "scripts": {
+    "installation": {
+      "container": "python:3.12-bookworm",
+      "entrypoint": "bash",
+      "script": "#!/bin/bash\napt update\napt install -y git curl\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ -d .git ]; then\n    git pull\nelse\n    git clone https://github.com/HungerNet/Platform.git .\nfi\n\ncd backend\n\nexport HOME=/mnt/server\n\ncurl -LsSf https://astral.sh/uv/install.sh | sh\nexport PATH=\"$HOME/.local/bin:$PATH\"\n\nuv sync\n\nuv run alembic upgrade head\n\necho \"Install complete\"\nexit 0"
+    }
+  },
+  "variables": [
+    {
+      "name": "Database URL",
+      "description": "PostgreSQL connection string",
+      "env_variable": "DATABASE_URL",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Redis URL",
+      "description": "Redis connection string",
+      "env_variable": "REDIS_URL",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "JWT Secret",
+      "description": "JWT signing secret",
+      "env_variable": "JWT_SECRET",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    }
+  ]
+}
