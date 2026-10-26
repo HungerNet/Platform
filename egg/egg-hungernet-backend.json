@@ -6,11 +6,11 @@
   },
   "name": "HungerNet Backend",
   "author": "support@hungernet.dev",
-  "description": "HungerNet FastAPI backend using uv, PostgreSQL, and Redis.",
+  "description": "HungerNet FastAPI backend powered by uv.",
   "features": null,
   "docker_images": {
-    "Python 3.12": "ghcr.io/ptero-eggs/yolks:python_3.12",
-    "Python 3.13": "ghcr.io/ptero-eggs/yolks:python_3.13"
+    "Python 3.13": "ghcr.io/ptero-eggs/yolks:python_3.13",
+    "Python 3.12": "ghcr.io/ptero-eggs/yolks:python_3.12"
   },
   "file_denylist": [],
   "startup": "cd /home/container/backend && export PATH=\"/home/container/.local/bin:$PATH\" && uv run uvicorn app.main:app --host 0.0.0.0 --port {{SERVER_PORT}}",
@@ -24,7 +24,7 @@
     "installation": {
       "container": "python:3.12-bookworm",
       "entrypoint": "bash",
-      "script": "#!/bin/bash\napt update\napt install -y git curl\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ -d .git ]; then\n    git pull\nelse\n    git clone https://github.com/HungerNet/Platform.git .\nfi\n\ncd backend\n\nexport HOME=/mnt/server\n\ncurl -LsSf https://astral.sh/uv/install.sh | sh\nexport PATH=\"$HOME/.local/bin:$PATH\"\n\nuv sync\n\nuv run alembic upgrade head\n\necho \"Install complete\"\nexit 0"
+      "script": "#!/bin/bash\napt update\napt install -y git curl\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ -d .git ]; then\n    git pull\nelse\n    git clone https://github.com/HungerNet/Platform.git .\nfi\n\ncd backend\n\nexport HOME=/mnt/server\n\ncurl -LsSf https://astral.sh/uv/install.sh | sh\nexport PATH=\"$HOME/.local/bin:$PATH\"\n\nuv sync\n\nuv run alembic upgrade head\n\nuv run python -m app.cli setup-superuser\n\necho \"Install complete\"\nexit 0"
     }
   },
   "variables": [
@@ -42,7 +42,7 @@
       "name": "Redis URL",
       "description": "Redis connection string",
       "env_variable": "REDIS_URL",
-      "default_value": "",
+      "default_value": "redis://localhost:6379/0",
       "user_viewable": true,
       "user_editable": true,
       "rules": "required|string",
@@ -52,6 +52,86 @@
       "name": "JWT Secret",
       "description": "JWT signing secret",
       "env_variable": "JWT_SECRET",
+      "default_value": "",
+      "user_viewable": false,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "JWT Algorithm",
+      "description": "JWT algorithm",
+      "env_variable": "JWT_ALGORITHM",
+      "default_value": "HS256",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Access Token Expiry Minutes",
+      "description": "JWT access token expiry",
+      "env_variable": "ACCESS_TOKEN_EXPIRY_MINUTES",
+      "default_value": "15",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer",
+      "field_type": "text"
+    },
+    {
+      "name": "Session Expiry Days",
+      "description": "Session expiry time",
+      "env_variable": "SESSION_EXPIRY_DAYS",
+      "default_value": "90",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|integer",
+      "field_type": "text"
+    },
+    {
+      "name": "Avatar Storage Directory",
+      "description": "Directory used for avatar storage",
+      "env_variable": "AVATAR_STORAGE_DIR",
+      "default_value": "media",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Avatar Public Base URL",
+      "description": "Public URL used when generating avatar URLs",
+      "env_variable": "AVATAR_PUBLIC_BASE_URL",
+      "default_value": "",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "nullable|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Superuser ID",
+      "description": "Initial superuser ID",
+      "env_variable": "SUPERUSER_ID",
+      "default_value": "hungernet",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Superuser Username",
+      "description": "Initial superuser username",
+      "env_variable": "SUPERUSER_USERNAME",
+      "default_value": "HungerNet",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|string",
+      "field_type": "text"
+    },
+    {
+      "name": "Superuser Password",
+      "description": "Initial superuser password",
+      "env_variable": "SUPERUSER_PASSWORD",
       "default_value": "",
       "user_viewable": false,
       "user_editable": true,
