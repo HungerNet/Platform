@@ -16,7 +16,7 @@
   "startup": "cd /home/container/backend && export PATH=\"/home/container/.local/bin:$PATH\" && uv run uvicorn app.main:app --host 0.0.0.0 --port {{SERVER_PORT}} --proxy-headers --forwarded-allow-ips '*'",
   "config": {
     "files": "{}",
-    "startup": "{\r\n    \"done\": \"Application startup complete\"\r\n}",
+    "startup": "{\r\n    \"done\": \"Uvicorn running on\"\r\n}",
     "logs": "{}",
     "stop": "^C"
   },
@@ -24,7 +24,7 @@
     "installation": {
       "container": "python:3.12-bookworm",
       "entrypoint": "bash",
-      "script": "#!/bin/bash\napt update\napt install -y git curl\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nif [ -d .git ]; then\n  git pull\nelse\n  git clone https://github.com/HungerNet/Platform.git .\nfi\n\ncd backend\n\nexport HOME=/mnt/server\n\ncurl -LsSf https://astral.sh/uv/install.sh | sh\nexport PATH=\"$HOME/.local/bin:$PATH\"\n\nuv sync\nuv run alembic upgrade head\n\necho \"Install complete\"\nexit 0"
+      "script": "#!/bin/bash\nset -e\n\napt update\napt install -y git curl\n\nmkdir -p /mnt/server\ncd /mnt/server\n\nrm -rf source\n\ngit clone https://github.com/HungerNet/Platform.git source\n\ncp -r source/* .\ncp -r source/.[!.]* . 2>/dev/null || true\n\nrm -rf source\n\ncd backend\n\nexport HOME=/mnt/server\n\ncurl -LsSf https://astral.sh/uv/install.sh | sh\nexport PATH=\"$HOME/.local/bin:$PATH\"\n\nuv sync\nuv run alembic upgrade head\n\necho \"Install complete\"\nexit 0"
     }
   },
   "variables": [
@@ -40,7 +40,7 @@
     },
     {
       "name": "JWT Secret",
-      "description": "JWT secret. Use a securely generated value of at least 32 characters.",
+      "description": "JWT secret.",
       "env_variable": "JWT_SECRET",
       "default_value": "",
       "user_viewable": false,
@@ -50,7 +50,7 @@
     },
     {
       "name": "JWT Algorithm",
-      "description": "JWT signing algorithm.",
+      "description": "JWT algorithm.",
       "env_variable": "JWT_ALGORITHM",
       "default_value": "HS256",
       "user_viewable": true,
@@ -60,7 +60,7 @@
     },
     {
       "name": "Access Token Expiry Minutes",
-      "description": "JWT access token lifetime in minutes.",
+      "description": "Access token lifetime.",
       "env_variable": "ACCESS_TOKEN_EXPIRY_MINUTES",
       "default_value": "15",
       "user_viewable": true,
@@ -70,7 +70,7 @@
     },
     {
       "name": "Session Expiry Days",
-      "description": "User session lifetime in days.",
+      "description": "Session lifetime.",
       "env_variable": "SESSION_EXPIRY_DAYS",
       "default_value": "90",
       "user_viewable": true,
@@ -90,7 +90,7 @@
     },
     {
       "name": "Vite API Proxy Target",
-      "description": "Frontend development proxy target.",
+      "description": "Frontend API proxy target.",
       "env_variable": "VITE_API_PROXY_TARGET",
       "default_value": "http://localhost:8000",
       "user_viewable": true,
@@ -100,7 +100,7 @@
     },
     {
       "name": "Avatar Storage Directory",
-      "description": "Directory used to store avatar uploads.",
+      "description": "Avatar storage path.",
       "env_variable": "AVATAR_STORAGE_DIR",
       "default_value": "media",
       "user_viewable": true,
@@ -110,7 +110,7 @@
     },
     {
       "name": "Avatar Public Base URL",
-      "description": "Base URL used when generating avatar links.",
+      "description": "Avatar public URL base.",
       "env_variable": "AVATAR_PUBLIC_BASE_URL",
       "default_value": "https://api.hungernet.dev",
       "user_viewable": true,
@@ -120,7 +120,7 @@
     },
     {
       "name": "Superuser ID",
-      "description": "Superuser account identifier.",
+      "description": "Superuser ID.",
       "env_variable": "SUPERUSER_ID",
       "default_value": "hungernet",
       "user_viewable": true,
@@ -140,7 +140,7 @@
     },
     {
       "name": "Superuser Password",
-      "description": "Password used when running the setup-superuser CLI.",
+      "description": "Used when running setup-superuser manually.",
       "env_variable": "SUPERUSER_PASSWORD",
       "default_value": "",
       "user_viewable": false,
@@ -149,8 +149,7 @@
       "field_type": "text"
     },
     {
-      "name": "PostgreSQL Database",
-      "description": "Default PostgreSQL database name.",
+      "name": "Postgres Database",
       "env_variable": "POSTGRES_DB",
       "default_value": "hungernet",
       "user_viewable": true,
@@ -159,8 +158,7 @@
       "field_type": "text"
     },
     {
-      "name": "PostgreSQL User",
-      "description": "Default PostgreSQL username.",
+      "name": "Postgres User",
       "env_variable": "POSTGRES_USER",
       "default_value": "hungernet",
       "user_viewable": true,
@@ -169,8 +167,7 @@
       "field_type": "text"
     },
     {
-      "name": "PostgreSQL Password",
-      "description": "Default PostgreSQL password.",
+      "name": "Postgres Password",
       "env_variable": "POSTGRES_PASSWORD",
       "default_value": "",
       "user_viewable": false,
